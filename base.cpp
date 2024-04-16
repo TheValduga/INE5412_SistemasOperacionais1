@@ -187,25 +187,40 @@ void EDF(list<Process> &Ps, list<planning> &plan) {
     }
 }
 
+class File {
+    public:
+        File() {
+            myfile.open("entrada.txt");
+            if (!myfile.is_open()) {
+                cout << "Erro ao abrir o arquivo!\n";
+            }
+        }
+
+    void read_file(list<Process> &p_) {
+        int a, b, c, d, e;
+
+        if (!myfile.is_open()) {
+			cout << "Arquivo não está aberto!" << endl;
+		}
+
+        while (myfile >> a >> b >> c >> d >> e) {
+            Process p = Process(a,b,c,d,e);
+            p_.push_back(p);
+        }
+
+        cout << "Quantidade de processos lidos do arquivo: " << p_.size() << endl;
+    }
+
+    private:
+    ifstream myfile;
+};
+
 
 
 int main() {
+    File f;
     list<Process> Ps;
-
-    Process P1(0, 0, 5, 1, 20);
-    Ps.push_back(P1);
-
-    Process P2(1, 0, 2, 4, 8);
-    Ps.push_back(P2);
-
-    Process P3(2, 1, 4, 2, 16);
-    Ps.push_back(P3);
-
-    Process P4(3, 3, 3, 3, 12);
-    Ps.push_back(P4);
-
-
-    printf("%d", P1.duration);
+    f.read_file(Ps);
 
     list<planning> plan;
     // roundRobin(Ps, plan);
