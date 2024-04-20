@@ -320,13 +320,15 @@ class File {
         }
 
         void read_file(vector<Process> &p_) {
-            int a, b, c, d, e, f;
+            int creation_date, duration, period, deadline, priority, repeticao;
             if (!myfile.is_open()) {
                 cout << "Arquivo não está aberto!" << endl;
             }
-            while (myfile >> a >> b >> c >> d >> e >> f) {
-                Process p = Process(a,b,c,d,e,1,15,f);
+            int pid = 0;
+            while (myfile >> creation_date >> duration >> period >> deadline >> priority >> repeticao) {
+                Process p = Process(pid,creation_date,duration,priority,period,1,15,repeticao);
                 p_.push_back(p);
+                pid++;
             }   
             cout << "Quantidade de processos lidos do arquivo: " << p_.size() << endl;
         }
@@ -354,31 +356,9 @@ int main() {
     hd1.write(0, 4); hd1.write(0, 23);
     hd1.SP = 17;
 
-
-    Process P1(0, 0, 5, 1, 14, 1, 15, 5);
-    Ps.push_back(P1);
-
-    Process P2(1, 0, 5, 4, 8, 1, 15, 4);
-    Ps.push_back(P2);
-
-    Process P3(2, 1, 5, 2, 16, 1, 15, 4);
-    Ps.push_back(P3);
-
-    Process P4(3, 3, 5, 3, 12, 1, 15, 3);
-    Ps.push_back(P4);
-
-
-
     CPU INE5412(hd1);
     INE5412.PSList = Ps;
 
     INE5412.run();
 
 }
-
-
-
-
-
-
-
