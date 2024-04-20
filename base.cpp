@@ -6,10 +6,72 @@
 #include <list>
 #include <unistd.h>
 #include <vector>
-
-
+#include <math.h>
 
 using namespace std;
+
+
+
+struct page {
+    int regs[9];
+};
+
+
+class HD {
+    public:
+        vector<int> memory;
+        int SP = 1;
+
+        HD(int space) {
+            memory.push_back(space);
+        }
+
+        int access(int location) {
+            return memory[location];
+        }
+
+        page accessPage(int location) {
+            page context;
+            for (int i = 0; i < 9; i++) {
+                context.regs[i] = memory[location+i];
+            }
+            return context;
+        }
+
+        int write(int location, int value) {
+            if (location > memory[0]) {
+                printf("Out of Bounds!");
+            }
+            if (location == 0 and SP > memory[0]) {
+                printf("Memory out of Space!");
+            }
+            if (location == 0) {
+                memory.push_back(value);
+                SP += 1;
+                return (SP-1);
+            } else {
+                memory[location] = value;
+                return 0;
+            }
+        }
+
+        void printHD() {
+            int i;
+            for (i = 0; i < SP; i++) {
+                if (i % 10 == 0) {
+                    cout << "\n";
+                }
+                cout << access(i) << '|';
+            }
+            for (i; i < memory[0]; i++) {
+                cout << 0 << '|';
+                if (i % 10 == 0) {
+                    cout << "\n";
+                }
+            }
+            cout << "\n";
+        }
+};
 
 class Process {
     public:
@@ -22,10 +84,14 @@ class Process {
         char state; // (N)ovo, (P)ronto, (E)xecutando, (T)erminado
         int usedtime;
         int period;
-        int DLcur; // Deadline Current
-        int DLmax; // Deadline Max
-        int queue; // quando o processo já passou do periodo e existe outra instancia esperando execução
-        Process(int pidN, int startN, int durationN, int priorityN, int periodN) {
+        int DLcur; // Deadline Current (qual o limite em segundos atual para essa instância em específico ser entregue)
+        int DLmax; // Deadline Max (qual o limite em segundos geral que esse processo tem para ser entregue)
+        int repeatable;
+        int context = 0; // Local da memória em que é salvo o contexto do processo
+        int programStart; // Onde começa o código do programa na memória
+        int programEnd; // Onde termina o código do programa na memória
+
+        Process(int pidN, int startN, int durationN, int priorityN, int periodN, int pstart, int pend, int repeats) {
             pid = pidN;
             start = startN;
             state = 'N';
@@ -35,157 +101,214 @@ class Process {
             period = periodN;
             DLcur = periodN;
             DLmax = periodN;
-            queue = 0;
             usedtime = 0;
+            programStart = pstart;
+            programEnd = pend;
+            repeatable = repeats;
         }
-};
 
-struct scheduler_turn {
-    bool flag;
-    bool full;
-};
+        void restart() {
+            duration = durationMax;
+            repeatable -= 1;
+            DLcur = DLmax;
+        }
 
-struct planning {
-    int pid;
-    int tempo;
-    int DLcur;
-    int duration;
-};
-
-
-
-void roundRobin(list<Process> &Ps, list<planning> &plan) {
-    int tempo = 0;
-    bool flag = true;
-    bool timeflag;
-    int pos;
-
-    while (flag) {
-        flag = false;
-        timeflag = true;
-        pos = 0;
-        for (Process p : Ps) {
-            if (p.duration > 0) {
-                flag = true;
-                if (p.start <= tempo) {
-                    planning t;
-                    t.pid = p.pid;
-                    t.tempo = tempo;
-                    plan.push_back(t);
-
-                    list<Process>::iterator it = Ps.begin();
-                    advance(it, pos);
-                    (*it).duration -= 1;
-                    tempo += 1;
-                    timeflag = false;
-                }
+        void aging() {
+            DLcur -= 1;
+            if (DLcur < 0) {
+                duration = 0;
             }
-            pos += 1;
         }
-        if (timeflag) {
-            tempo += 1;
-        }
-    }
-}
+};
 
-void printing(int &tempo, vector<int> &result, int &posR) {
-    string resu("");
-    int aux = 0;
-    int proc = 0;
-    while (!(result.empty())){
-        if (result[0] != aux) {
-            resu.append("    |");
-            aux++;
-            proc++;
-        } else {
-            if (result[0] == posR) {
-                resu.append(" ## |");
+class CPU {
+    public:
+        int regs[6];
+        int SP;
+        int PC = 0;
+        int ST;
+        int tempo = 0;
+        HD disk;
+        vector<Process> PSList;
+
+        CPU(HD &hd) : disk(hd) {}
+
+        void salvaContexto(int pidAntigo) {
+            int pos;
+            if (PSList[pidAntigo].context != 0) {
+                pos = PSList[pidAntigo].context;
+                disk.write(pos, regs[0]);
+                disk.write(pos+1, regs[1]);
+                disk.write(pos+2, regs[2]);
+                disk.write(pos+3, regs[3]);
+                disk.write(pos+4, regs[4]);
+                disk.write(pos+5, regs[5]);
+                disk.write(pos+6, SP);
+                disk.write(pos+7, PC);
+                disk.write(pos+8, ST);
             } else {
-                resu.append(" -- |");
+                pos = disk.write(0, regs[0]);
+                disk.write(0, regs[1]);
+                disk.write(0, regs[2]);
+                disk.write(0, regs[3]);
+                disk.write(0, regs[4]);
+                disk.write(0, regs[5]);
+                disk.write(0, SP);
+                disk.write(0, PC);
+                disk.write(0, ST);
+                PSList[pidAntigo].context = pos;
             }
-            aux++;
-            result.erase(result.begin());
-            proc++;
         }
-    }
-    if (proc < 4){
-        for(int i = 0; i < (4-proc); i++){
-            resu.append("    |");
+
+        void recuperaContexto(int pid) {
+            int pos = PSList[pid].context;
+            page context;
+            if (pos == 0) {
+                for (int i = 0; i < 6; i++) {
+                    regs[i] = 0;
+                }
+                SP = 0;
+                PC = 0 + PSList[pid].programStart;
+                ST = 0;
+            } else {
+                context = disk.accessPage(pos);
+                regs[0] = context.regs[0];
+                regs[1] = context.regs[1];
+                regs[2] = context.regs[2];
+                regs[3] = context.regs[3];
+                regs[4] = context.regs[4];
+                regs[5] = context.regs[5];
+                SP = context.regs[6];
+                PC = context.regs[7];
+                ST = context.regs[8];
+            }
         }
-    }
-    printf("%02d-%02d |%s\n", tempo-1,tempo, resu.c_str());
-}
 
-void EDF(list<Process> &Ps, list<planning> &plan) {
-    int tempo = 0;
-    bool flag = true;
-    bool timeflag;
-    int pos;
-    int posR;
+        int EDF() {
+            int pid = -2;
+            int pos = 0;
+            int DLmenor = 0;
 
-    printf("\ntempo | P1 | P2 | P3 | P4 |\n");
-    while (flag) {
-        flag = false;
-        timeflag = true;
-        pos = 0;
-        planning t;
-        vector<int> result;
-        bool full = false;
-        for (Process p : Ps) {
-            if (p.duration > 0) {
-                flag = true;
-                if (p.start <= tempo) {
-                    p.state = 'P';
-                    result.push_back(pos);
-                    if (not full) {
-                        t.pid = p.pid;
-                        t.tempo = tempo;
-                        t.duration = p.duration;
-                        t.DLcur = p.DLcur;
-                        posR = pos;
-                        full = true;
-                    } else if (p.DLcur < t.DLcur) {
-                        t.pid = p.pid;
-                        t.tempo = tempo;
-                        t.duration = p.duration;
-                        t.DLcur = p.DLcur;
-                        posR = pos;
+            for (Process p : PSList) {
+                if (pid == -2 and p.repeatable > 0) {
+                    pid = -1;
+                }
+                if (tempo % p.period == 0 and p.repeatable > 0 and tempo != 0) {
+                    p.restart();
+                }
+                if (p.duration > 0) {
+                    if (p.start <= tempo) {
+                        p.state = 'P';
+                        if (pid == -1 or pid == -2) {
+                            DLmenor = p.DLcur;
+                            pid = pos;
+                        } else if (p.DLcur < DLmenor) {
+                            DLmenor = p.DLcur;
+                            pid = pos;
+                        }
+                    }
+                } else {
+                    p.state = 'T';
+                }
+                
+                
+                if (((tempo+1) % p.period == 0) and p.duration > 0) {
+                    p.state = 'D';
+                }
+                PSList[pos] = p;
+                pos += 1;
+            }
+            return pid;
+        }
+
+        void run() {
+            printf("\ntempo | P1 | P2 | P3 | P4 |\n");
+            
+            int pid;
+            int pidAntigo;
+
+            pid = EDF();
+            PSList[pid].state = 'E';
+            recuperaContexto(pid);
+
+            while (true) {
+                string resu("");
+
+
+                for (int i = 3; i != 0; i--) {
+                    int reg = disk.access(PC);
+                    PC++;
+                    int atrib = disk.access(PC);
+                    PC++;
+                    regs[reg] = atrib + PSList[pid].period - PSList[pid].DLcur;
+                    if (PC > 16) {
+                        PC = PSList[pid].start;
                     }
                 }
-            } else if (p.queue > 0) {
-                result.push_back(pos);
-                p.duration = p.durationMax;
-                p.DLcur += p.DLmax;
-                p.queue -= 1;
-            } else {
-                p.state = 'T';
-            }
-            if (tempo % p.period == 0 && tempo != 0) {
-                if (p.duration != 0) {
-                    p.queue += 1;
-                } else {
-                    p.duration = p.durationMax;
+
+
+                PSList[pid].duration -= 1;
+                PSList[pid].usedtime += 1;
+                if (PSList[pid].duration == 0) {
+                    PSList[pid].state = 'C';
+                    PSList[pid].end = tempo;
+                }
+                int pos = 0;
+                for (Process p : PSList) {
+                    p.aging();
+                    PSList[pos] = p;
+                    pos += 1;
+                }
+
+
+                sleep(1);
+                tempo += 1;
+
+
+                for (Process p : PSList) {
+                    switch (p.state) {
+                        case 'T':
+                        case 'N':
+                            resu.append("    |");
+                            break;
+                        case 'P':
+                            resu.append(" -- |");
+                            break;
+                        case 'E':
+                            resu.append(" ## |");
+                            break;
+                        case 'D':
+                            resu.append(" XX |");
+                            break;
+                        case 'C':
+                            resu.append(" VV |");
+                            break;
+                    }
+                }
+                printf("%02d-%02d |%s\n", tempo-1, tempo, resu.c_str());
+
+
+
+                pidAntigo = pid;
+                pid = EDF();
+                if (pid == -2) {
+                    break;
+                }
+                if ((PSList[pid].state == 'D' and PSList[pid].duration == 1) or (PSList[pid].state == 'P')) {
+                    PSList[pid].state = 'E';
+                }
+
+
+                if (pid != pidAntigo) {
+                    salvaContexto(pidAntigo);
+                    recuperaContexto(pid);
                 }
             }
-            list<Process>::iterator it2 = Ps.begin();
-            advance(it2, pos);
-            (*it2) = p;
-            pos += 1;
         }
+};
 
 
-        plan.push_back(t);
-        list<Process>::iterator it = Ps.begin();
-        advance(it, posR);
-        (*it).duration -= 1;
-        (*it).state = 'E';
-        tempo += 1;
 
-        printing(tempo, result, posR);
-
-        sleep(0.1);
-    }
-}
 
 class File {
     public:
@@ -196,47 +319,62 @@ class File {
             }
         }
 
-    void read_file(list<Process> &p_) {
-        int a, b, c, d, e;
-
-        if (!myfile.is_open()) {
-			cout << "Arquivo não está aberto!" << endl;
-		}
-
-        while (myfile >> a >> b >> c >> d >> e) {
-            Process p = Process(a,b,c,d,e);
-            p_.push_back(p);
+        void read_file(vector<Process> &p_) {
+            int a, b, c, d, e, f;
+            if (!myfile.is_open()) {
+                cout << "Arquivo não está aberto!" << endl;
+            }
+            while (myfile >> a >> b >> c >> d >> e >> f) {
+                Process p = Process(a,b,c,d,e,1,15,f);
+                p_.push_back(p);
+            }   
+            cout << "Quantidade de processos lidos do arquivo: " << p_.size() << endl;
         }
-
-        cout << "Quantidade de processos lidos do arquivo: " << p_.size() << endl;
-    }
-
     private:
-    ifstream myfile;
+        ifstream myfile;
 };
+
 
 
 
 int main() {
     File f;
-    list<Process> Ps;
+    vector<Process> Ps;
     f.read_file(Ps);
 
-    list<planning> plan;
-    // roundRobin(Ps, plan);
-    EDF(Ps, plan);
+    HD hd1(100);
+
+    hd1.write(0, 0); hd1.write(0, 3);
+    hd1.write(0, 1); hd1.write(0, 31);
+    hd1.write(0, 3); hd1.write(0, 62);
+    hd1.write(0, 5); hd1.write(0, 70);
+    hd1.write(0, 2); hd1.write(0, 51);
+    hd1.write(0, 1); hd1.write(0, 37);
+    hd1.write(0, 1); hd1.write(0, 845);
+    hd1.write(0, 4); hd1.write(0, 23);
+    hd1.SP = 17;
+
+
+    Process P1(0, 0, 5, 1, 14, 1, 15, 5);
+    Ps.push_back(P1);
+
+    Process P2(1, 0, 5, 4, 8, 1, 15, 4);
+    Ps.push_back(P2);
+
+    Process P3(2, 1, 5, 2, 16, 1, 15, 4);
+    Ps.push_back(P3);
+
+    Process P4(3, 3, 5, 3, 12, 1, 15, 3);
+    Ps.push_back(P4);
 
 
 
+    CPU INE5412(hd1);
+    INE5412.PSList = Ps;
 
-    /*list<planning>::iterator it;
-    for (it = plan.begin(); it != plan.end(); ++it) {
-        cout << it->tempo << '|' << it->pid << '\t';
-    }*/
+    INE5412.run();
+
 }
-
-
-
 
 
 
