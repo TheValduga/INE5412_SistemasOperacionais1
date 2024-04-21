@@ -118,7 +118,12 @@ int CPU::scheduling(string tipo) {
 }
 
 void CPU::run(string tipo) {
-    printf("\ntempo | P1 | P2 | P3 | P4 |\n");
+    string a = "\ntempo |";
+    for (int i = 0; i < PSList.size();i++) {
+        a.append(" P" + to_string(i+1) + " |");
+    }
+    a.append("\n");
+    printf("%s", a.c_str());
     
     int pid;
     int pidAntigo;
