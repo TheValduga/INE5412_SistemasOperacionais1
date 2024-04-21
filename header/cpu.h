@@ -25,7 +25,7 @@ class CPU {
         void salvaContexto(int pidAntigo);
         void recuperaContexto(int pid);
         int scheduling(string tipo);
-        void run();
+        void run(string tipo);
 
 };
 
