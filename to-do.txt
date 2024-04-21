@@ -1,0 +1,7 @@
+// ( ) Listar mais que 4 processos, lista dinâmica
+// (X) Rate Monotonic
+// ( ) Relatório
+// ( ) Makefile e divisão de arquivos por classe
+// ( ) Diagrama UML
+// ( ) Comentários no código
+// ( ) Printar as informações extras

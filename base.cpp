@@ -371,12 +371,3 @@ int main() {
     INE5412.run();
 
 }
-
-
-// to-do
-// ( ) Listar mais que 4 processos, lista dinâmica
-// (X) Rate Monotonic
-// ( ) Relatório
-// ( ) Makefile
-// ( ) Diagrama UML
-// ( ) Comentários no código
