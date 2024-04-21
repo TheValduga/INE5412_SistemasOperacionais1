@@ -8,24 +8,25 @@
 
 using namespace std;
 
+// Representação do processador de um computador
 class CPU {
     public:
-        int regs[6];
-        int SP;
-        int PC = 0;
-        int ST;
-        int tempo = 0;
-        int trocaContexto = 0;
-        HD disk;
-        vector<Process> PSList;
+        int regs[6]; // Registradores de uso geral
+        int SP; // Stack Pointer
+        int PC = 0; // Program Counter, indica qual a instrução que deve ser lida da memória
+        int ST; // Status
+        int tempo = 0; // Tempo total decorrido da simulação
+        int trocaContexto = 0; // Quantas vezes houve uma troca de contexto (processo de salvar os registradores na memória e recuperar outros registradores da memória)
+        HD disk; // Vetor de inteiros, que simula a memória secundária
+        vector<Process> PSList; // Vetor de processos
 
-        CPU(HD &hd);
+        CPU(HD &hd); // Construtor
 
-        void restartCPU();
-        void salvaContexto(int pidAntigo);
-        void recuperaContexto(int pid);
-        int scheduling(string tipo);
-        void run(string tipo);
+        void restartCPU(); // Reinicia as variáveis da classe para executar tanto o RM e o EDF.
+        void salvaContexto(int pidAntigo); // Salva na memória os valores atuais dos registradores
+        void recuperaContexto(int pid); // Trás da memória os valores dos registradores de um processo, e salva nos da CPU
+        int scheduling(string tipo); // Função de escalonamento que 
+        void run(string tipo); // função principal da CPU, é o que roda a maior parte
 
 };
 

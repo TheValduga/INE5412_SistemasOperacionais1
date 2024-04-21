@@ -3,5 +3,5 @@
 // ( ) Relatório
 // (X) Makefile e divisão de arquivos por classe
 // (X) Diagrama UML
-// ( ) Comentários no código
+// (X) Comentários no código
 // (X) Printar as informações extras
