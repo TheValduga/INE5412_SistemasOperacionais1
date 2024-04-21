@@ -184,10 +184,10 @@ class CPU {
             }
         }
 
-        int EDF() {
+        int scheduling(string tipo) {
             int pid = -2;
             int pos = 0;
-            int DLmenor = 0;
+            int menor = 0;
 
             for (Process p : PSList) {
                 if (pid == -2 and p.repeatable > 0) {
@@ -200,10 +200,18 @@ class CPU {
                     if (p.start <= tempo) {
                         p.state = 'P';
                         if (pid == -1 or pid == -2) {
-                            DLmenor = p.DLcur;
+                            if (tipo == "EDF") {
+                                menor = p.DLcur;
+                            } else {
+                                menor = p.period;
+                            }
                             pid = pos;
-                        } else if (p.DLcur < DLmenor) {
-                            DLmenor = p.DLcur;
+                        } else if ((p.DLcur < menor and tipo == "EDF") or (p.period < menor and tipo == "RM")) {
+                            if (tipo == "EDF") {
+                                menor = p.DLcur;
+                            } else {
+                                menor = p.period;
+                            }
                             pid = pos;
                         }
                     }
@@ -227,7 +235,7 @@ class CPU {
             int pid;
             int pidAntigo;
 
-            pid = EDF();
+            pid = scheduling("RM");
             PSList[pid].state = 'E';
             recuperaContexto(pid);
 
@@ -290,7 +298,7 @@ class CPU {
 
 
                 pidAntigo = pid;
-                pid = EDF();
+                pid = scheduling("RM");
                 if (pid == -2) {
                     break;
                 }
@@ -326,7 +334,7 @@ class File {
             }
             int pid = 0;
             while (myfile >> creation_date >> duration >> period >> deadline >> priority >> repeticao) {
-                Process p = Process(pid,creation_date,duration,priority,period,1,15,repeticao);
+                Process p = Process(pid, creation_date, duration, priority, period, 1, 15, repeticao);
                 p_.push_back(p);
                 pid++;
             }   
@@ -356,9 +364,19 @@ int main() {
     hd1.write(0, 4); hd1.write(0, 23);
     hd1.SP = 17;
 
+
     CPU INE5412(hd1);
     INE5412.PSList = Ps;
 
     INE5412.run();
 
 }
+
+
+// to-do
+// ( ) Listar mais que 4 processos, lista dinâmica
+// (X) Rate Monotonic
+// ( ) Relatório
+// ( ) Makefile
+// ( ) Diagrama UML
+// ( ) Comentários no código
