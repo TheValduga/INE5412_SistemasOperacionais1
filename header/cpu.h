@@ -15,11 +15,13 @@ class CPU {
         int PC = 0;
         int ST;
         int tempo = 0;
+        int trocaContexto = 0;
         HD disk;
         vector<Process> PSList;
 
         CPU(HD &hd);
 
+        void restartCPU();
         void salvaContexto(int pidAntigo);
         void recuperaContexto(int pid);
         int scheduling(string tipo);

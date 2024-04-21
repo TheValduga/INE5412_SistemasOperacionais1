@@ -33,7 +33,22 @@ void CPU::salvaContexto(int pidAntigo) {
     }
 }
 
+void CPU::restartCPU() {
+    regs[0] = 0;
+    regs[1] = 0;
+    regs[2] = 0;
+    regs[3] = 0;
+    regs[4] = 0;
+    regs[5] = 0;
+    SP = 0;
+    PC = 0;
+    ST = 0;
+    tempo = 0;
+    trocaContexto = 0;
+}
+
 void CPU::recuperaContexto(int pid) {
+    trocaContexto += 1;
     int pos = PSList[pid].context;
     page context;
     if (pos == 0) {
@@ -91,6 +106,8 @@ int CPU::scheduling(string tipo) {
         } else {
             p.state = 'T';
         }
+        
+        
         if (((tempo+1) % p.period == 0) and p.duration > 0) {
             p.state = 'D';
         }
@@ -100,45 +117,57 @@ int CPU::scheduling(string tipo) {
     return pid;
 }
 
-void CPU::run() {
+void CPU::run(string tipo) {
     printf("\ntempo | P1 | P2 | P3 | P4 |\n");
-
+    
     int pid;
     int pidAntigo;
 
-    pid = scheduling("RM");
+    pid = scheduling(tipo);
     PSList[pid].state = 'E';
     recuperaContexto(pid);
 
     while (true) {
         string resu("");
 
-        for (int i = 3; i != 0; i--) {
-            int reg = disk.access(PC);
-            PC++;
-            int atrib = disk.access(PC);
-            PC++;
-            regs[reg] = atrib + PSList[pid].period - PSList[pid].DLcur;
-            if (PC > 16) {
-                PC = PSList[pid].start;
+        if (pid != -1) {
+            for (int i = 3; i != 0; i--) {
+                if (PC > PSList[pid].programEnd) {
+                    PC = PSList[pid].programStart;
+                }
+                int reg = disk.access(PC);
+                PC++;
+                int atrib = disk.access(PC);
+                PC++;
+                regs[reg] = atrib + PSList[pid].period - PSList[pid].DLcur;
+            }
+
+
+            PSList[pid].duration -= 1;
+            PSList[pid].usedtime += 1;
+            if (PSList[pid].duration == 0) {
+                PSList[pid].state = 'C';
+                if (PSList[pid].repeatable == 0) {
+                    PSList[pid].end = tempo;
+                }
+            }
+            int pos = 0;
+            for (Process p : PSList) {
+                if (p.state == 'P') {
+                    p.waittime += 1;
+                } else if (p.state == 'D') {
+                    p.DLlost += 1;
+                    p.end = tempo;
+                }
+                p.aging();
+                PSList[pos] = p;
+                pos += 1;
             }
         }
 
-        PSList[pid].duration -= 1;
-        PSList[pid].usedtime += 1;
-        if (PSList[pid].duration == 0) {
-            PSList[pid].state = 'C';
-            PSList[pid].end = tempo;
-        }
-        int pos = 0;
-        for (Process p : PSList) {
-            p.aging();
-            PSList[pos] = p;
-            pos += 1;
-        }
-
-        sleep(1);
+        sleep(0.1);
         tempo += 1;
+
 
         for (Process p : PSList) {
             switch (p.state) {
@@ -162,18 +191,26 @@ void CPU::run() {
         }
         printf("%02d-%02d |%s\n", tempo-1, tempo, resu.c_str());
 
-        pidAntigo = pid;
-        pid = scheduling("RM");
+
+
+        if (pid != -1) {
+            pidAntigo = pid;
+        }
+        pid = scheduling(tipo);
+        // if (tempo == 20 or tempo == 21) {
+        //     printf("%d\n", pid);
+        // }
         if (pid == -2) {
             break;
         }
-        if ((PSList[pid].state == 'D' and PSList[pid].duration == 1) or (PSList[pid].state == 'P')) {
-            PSList[pid].state = 'E';
-        }
-
-        if (pid != pidAntigo) {
-            salvaContexto(pidAntigo);
-            recuperaContexto(pid);
+        if (pid != -1) {
+            if ((PSList[pid].state == 'D' and PSList[pid].duration == 1) or (PSList[pid].state == 'P')) {
+                PSList[pid].state = 'E';
+            }
+            if (pid != pidAntigo) {
+                salvaContexto(pidAntigo);
+                recuperaContexto(pid);
+            }
         }
     }
 }

@@ -13,10 +13,10 @@ Process::Process(int pidN, int startN, int durationN, int priorityN, int periodN
     period = periodN;
     DLcur = periodN;
     DLmax = periodN;
-    usedtime = 0;
     programStart = pstart;
     programEnd = pend;
     repeatable = repeats;
+    repeatableMax = repeats;
 }
 
 void Process::restart() {
@@ -27,7 +27,7 @@ void Process::restart() {
 
 void Process::aging() {
     DLcur -= 1;
-    if (DLcur < 0) {
+    if (DLcur <= 0) {
         duration = 0;
     }
 }
