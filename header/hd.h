@@ -9,7 +9,7 @@ struct page {
 
 class HD {
     public:
-        vector<int> memory;
+        std::vector<int> memory;
         int SP = 1;
 
         HD(int space);  //construtor
