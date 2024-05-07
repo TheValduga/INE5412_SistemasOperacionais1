@@ -181,25 +181,25 @@ class DoublyLinkedList {
 }  // namespace structures
 
 template<typename T>
-structures::DoublyLinkedList<T>::DoublyLinkedList() {  // ok
+structures::DoublyLinkedList<T>::DoublyLinkedList() {
     head = nullptr;
     size_ = 0;
 }
 
 template<typename T>
-structures::DoublyLinkedList<T>::~DoublyLinkedList() {  // ok
+structures::DoublyLinkedList<T>::~DoublyLinkedList() {
     clear();
 }
 
 template<typename T>
-void structures::DoublyLinkedList<T>::clear() {  // ok
+void structures::DoublyLinkedList<T>::clear() {
     while (!empty()) {
         pop_front();
     }
 }
 
 template<typename T>
-void structures::DoublyLinkedList<T>::push_back(const T& data) {  // ok
+void structures::DoublyLinkedList<T>::push_back(const T& data) {
     insert(data, size_);
 }
 
@@ -320,7 +320,7 @@ void structures::DoublyLinkedList<T>::remove(const T& data) {
 }
 
 template<typename T>
-bool structures::DoublyLinkedList<T>::empty() const {  // ok
+bool structures::DoublyLinkedList<T>::empty() const {  
     return size_ == 0;
 }
 
@@ -381,7 +381,7 @@ std::size_t structures::DoublyLinkedList<T>::find(const T& data) const {
 }
 
 template<typename T>
-std::size_t structures::DoublyLinkedList<T>::size() const {  // ok
+std::size_t structures::DoublyLinkedList<T>::size() const {  
     return size_;
 }
 
