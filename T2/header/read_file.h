@@ -5,27 +5,33 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <string.h>
+#include <stdlib.h>
 
 using namespace std;
 
+    struct instrucoes {
+        char tipo;
+        int tamanho;
+        char id;
+    };
 
-struct dados {
-    int tipo;
-    int tamanho;
-    int bloco;
-    int algoritmo;
-};
+    struct entrada {
+        vector<int> dados;
+        vector<instrucoes> comando;
+    };
 
 class readFile {
     private:
         ifstream myfile;
-        dados mydata;
+        entrada mydata;
 
     public:
         readFile();
 
-        dados getMydata();
+        entrada getMydata();
         void read_file();
 };
+
 
 #endif //READ_FILE_H

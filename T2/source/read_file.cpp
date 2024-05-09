@@ -1,10 +1,8 @@
 #include <iostream>
-#include <fstream>
-#include <string>
-#include <vector>
 #include "../header/read_file.h"
 
 using namespace std;
+
 
 readFile::readFile() {
     myfile.open("entrada.txt");
@@ -13,20 +11,39 @@ readFile::readFile() {
     }
 }
 
-dados readFile::getMydata() {
+entrada readFile::getMydata() {
     return mydata;
 }
 
 void readFile::read_file() {
-    int tipo, tamanho, bloco, algoritmo;
-
     if (!myfile.is_open()) {
         cout << "Arquivo não está aberto!" << endl;
     }
-    while (myfile >> tipo >> tamanho >> bloco >> algoritmo) {
-        mydata.tipo = tipo;
-        mydata.tamanho = tamanho;
-        mydata.bloco = bloco;
-        mydata.algoritmo = algoritmo;
+
+    string linha;
+    int i = 0;
+    while(getline(myfile, linha)) {
+        linha[strcspn(linha.c_str(), "\n")] = 0;
+        if (i < 4) {
+            int aux = atoi(linha.c_str());
+            mydata.dados.push_back(aux);
+        } else {
+            instrucoes atual;
+            atual.tipo = linha[0];
+            if (linha[0] == 'A') {
+                string temp = "";
+                for (int j = 2; j < linha.size(); j++) {
+                    if (linha[j] != ' ') {
+                        temp = temp + linha[j];
+                    } else {
+                        break;
+                    }
+                }
+                atual.tamanho = atoi(temp.c_str());
+            }
+            atual.id = linha[linha.size() - 1];
+            mydata.comando.push_back(atual);
+        }
+        i++;
     }
 }
