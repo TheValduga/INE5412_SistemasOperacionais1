@@ -2,10 +2,9 @@
 
 #include "header/read_file.h"
 #include "source/read_file.cpp"
-
-
-
 #include "header/DoublyLinkedList.h"
+
+
 class Bitmap {
 public:
     int* bitmap;
