@@ -1,5 +1,5 @@
 #include <iostream>
-
+#include <stdio.h>
 #include "header/read_file.h"
 #include "header/DoublyLinkedList.h"
 #include "header/LinkedList.h"
@@ -18,38 +18,16 @@ int main() {
     memoria memoria;
     memoria.setup(gerencia, tamanho, bloco_minimo, algoritmo);
 
-    memoria.alocar(1, 512);
-    memoria.alocar(2, 1024);
-    memoria.alocar(3, 2048);
-    memoria.alocar(4, 4096);
-
-    memoria.desalocar(2);
-    memoria.desalocar(3);
-    memoria.desalocar(1);
-    memoria.desalocar(4);
-
-    memoria.print_memoria();
-
-    //use os prints pra te ajudar a entender como esta a entrada
-    /* a entrada esta colocada na forma de 2 vetores, um para os primeiros 4 dados para setar o algoritmo
-       e outro que possui os comando ja separados em forma de uma struct (olhe o readfile.h, teremos que
-       retirar essas structs em algum momento)*/
-
-    // checagem dos valores de entrada, colocados em mydata.dados em ordem de entrada, que nem no arquivo
-    /*for (int i = 0; i < 4; i++) printf("%d\n", mydata.dados.at(i));
-    printf("\n");
-
-    // checagem dos valores dos comandos
     for (int i = 0; i < mydata.comando.size(); i++) {
-        printf("%c\n", mydata.comando.at(i).tipo);
-        if (mydata.comando.at(i).tipo == 'A') {
-            printf("%d\n", mydata.comando.at(i).tamanho);
+        char c = mydata.comando.at(i).tipo;
+        char id = mydata.comando.at(i).id - '0';
+        if (c == 'A') {
+            memoria.alocar(id, mydata.comando.at(i).tamanho);
+        } else if (c == 'D') {
+            memoria.desalocar(id);
         }
-        printf("%c\n", mydata.comando.at(i).id);
-        printf("\n");
-    }*/
-
-
+    }
+    memoria.print_memoria();
 
     return 0;
 }

@@ -2,6 +2,7 @@
 #define MEMORIA_H
 
 #include <iostream>
+#include <stdexcept>
 #include "LinkedList.h"
 #include "DoublyLinkedList.h"
 
@@ -11,10 +12,11 @@ class memoria {
     public:
         memoria();
         void setup(int g, int t, int b, int a);
+        int getAlgoritmo();
         void print_memoria();
         void alocar(int id, int tamanho);
         void desalocar(int id);
-        void unir(int index);
+        void unir(int index); 
     
     private:
         int gerenciamento;
@@ -35,32 +37,39 @@ void memoria::setup(int g, int t, int b, int a) {
     g_lista.push_back(-1, 0, tamanho/bloco_min);
 }
 
+int memoria::getAlgoritmo() {
+    return algoritmo;
+}
+
 void memoria::print_memoria() {
     g_lista.print();
 }
 
 void memoria::alocar(int id, int tamanho) {
     // por enquanto só first fit e lista duplamente encadeada
-    size_t t = g_lista.size();
-    for (size_t i = 0u; i < t; i++) {
-        if (g_lista.at(i) == -1) {
-            int size = tamanho;
-            if (tamanho % bloco_min != 0) {
-                size = tamanho + (bloco_min - (tamanho % bloco_min));
-            }
-            size = size / bloco_min;
-            int livre = g_lista.at_size(i);
-            if (livre >= size) {
-                int end = g_lista.at_end(i);
-                g_lista.insert(id, end, size, i);
-                if (livre - size > 0 ) {
-                    g_lista.insert(-1, end + size, livre - size, i+1);
-                    g_lista.pop(i+2);
-                } else {
-                    g_lista.pop(i+1);
-                }
-                break;
-            }
+    int size = tamanho;
+    if (tamanho % bloco_min != 0) {
+        size = tamanho + (bloco_min - (tamanho % bloco_min));
+    }
+    size = size / bloco_min;
+    size_t i;
+    if (getAlgoritmo() == 2) {
+        i = g_lista.firstfit(size);
+    } else if (getAlgoritmo() == 1) {
+        i = g_lista.bestfit(size);
+    }
+    if (i == -1) {
+        cout << "Nenhum espaço encontrado para ID: " << id << endl;;
+    } else {
+        int livre = g_lista.at_size(i);
+        int end = g_lista.at_end(i);
+        g_lista.insert(id, end, size, i);
+
+        if (livre - size > 0 ) {
+            g_lista.insert(-1, end + size, livre - size, i+1);
+            g_lista.pop(i+2);
+        } else {
+            g_lista.pop(i+1);
         }
     }
 }
@@ -96,15 +105,5 @@ void memoria::unir(int index) {
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
 
 #endif

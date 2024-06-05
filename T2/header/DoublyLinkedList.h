@@ -32,6 +32,8 @@ class DoublyLinkedList {
     const T& at_end(std::size_t index) const; 
     std::size_t find(const T& data) const;  // posição de um dado
     std::size_t size() const;  // tamanho
+    std::size_t firstfit(const T&  tamanho);
+    std::size_t bestfit(const T&  tamanho);
     void print();
 
 
@@ -364,6 +366,57 @@ const T& structures::DoublyLinkedList<T>::at_end(std::size_t index) const {
     } else {
         Node* node = node(index);
         return node->endereco();
+    }
+}
+
+template<typename T>
+std::size_t structures::DoublyLinkedList<T>::firstfit(const T&  tamanho) {
+    if (empty()) {
+        throw(std::out_of_range("Erro Lista vazia"));
+    } else {
+        Node* aux = head;
+        int index = 0;
+        for (int i = 0; i < size(); i++) {
+            if (aux -> data() == -1) {
+                if (aux -> tamanho() >= tamanho) {
+                    index = i;
+                    break;
+                }
+            }
+            aux = aux -> next();
+        }
+        return index;
+    }
+}
+
+template<typename T>
+std::size_t structures::DoublyLinkedList<T>::bestfit(const T&  tamanho) {
+    if (empty()) {
+        throw(std::out_of_range("Erro Lista vazia"));
+    } else {
+        Node* aux = head;
+        auto index = 0;
+        int t = -1;
+        int i = 0;
+        for (i; i < size(); i++) {
+            if (at(i) == -1) {
+                if (at_size(i) >= tamanho and t == -1) {
+                    index = i;
+                    t = at_size(i);
+                } else if (at_size(i) >= tamanho and t > 0) {
+                    if (at_size(i) < t) {
+                        index = i;
+                        t = at_size(i);
+                    }
+                }
+            }
+            aux = aux -> next();
+        }
+        if (t == -1) {
+            return -1;
+        } else {
+            return index;
+        }
     }
 }
 
